@@ -2,11 +2,12 @@
 package config
 
 import (
-    "fmt"
-    "os"
-    "strconv"
+	"fmt"
+	"log"
+	"os"
+	"strconv"
 
-    "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -28,7 +29,10 @@ type Config struct {
 // LoadConfig loads configuration from environment variables
 func LoadConfig() (*Config, error) {
     // Load .env file if it exists
-    godotenv.Load()
+    err := godotenv.Load("../../.env")
+    if err != nil {
+        log.Printf("Error loading .env file: %v", err)
+    }
 
     config := &Config{}
 
@@ -44,7 +48,7 @@ func LoadConfig() (*Config, error) {
     config.DBName = getEnv("DB_NAME", "hrdb")
 
     // JWT config
-    config.JWTSecret = getEnv("JWT_SECRET", "")
+    config.JWTSecret = getEnv("JWT_SECRET", "hungdev98")
     if config.JWTSecret == "" {
         return nil, fmt.Errorf("JWT_SECRET is required")
     }

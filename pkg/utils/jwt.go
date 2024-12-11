@@ -19,7 +19,7 @@ func GenerateToken(userID int, secretKey string) (string, error) {
     claims := CustomClaims{
         userID,
         jwt.RegisteredClaims{
-            ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // Token hết hạn sau 24h
+            ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour * 7)), // Token hết hạn sau 24h
             IssuedAt:  jwt.NewNumericDate(time.Now()),
             NotBefore: jwt.NewNumericDate(time.Now()),
         },

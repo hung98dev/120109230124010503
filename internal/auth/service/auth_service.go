@@ -2,17 +2,17 @@
 package service
 
 import (
-    "context"
-    "hr-backend/internal/auth/dto"
-    "hr-backend/internal/auth/repository"
-    "hr-backend/internal/db"
-    "hr-backend/pkg/errors"
-    "hr-backend/pkg/utils"
+	"context"
+	"hr-backend/db"
+	"hr-backend/internal/auth/dto"
+	"hr-backend/internal/auth/repository"
+	"hr-backend/pkg/errors"
+	"hr-backend/pkg/utils"
 )
 
 type IAuthService interface {
-    Register(ctx context.Context, req dto.RegisterRequest) (db.User, error)
-    Login(ctx context.Context, req dto.LoginRequest) (string, db.User, error)
+    Register(ctx context.Context, req dto.RegisterRequest) (string, error)
+    Login(ctx context.Context, req dto.LoginRequest) (string, db.GetUserByUserNameRow, error)
 }
 
 type AuthService struct {
@@ -27,35 +27,35 @@ func NewAuthService(repo repository.IAuthRepository, jwtSecret string) IAuthServ
     }
 }
 
-func (s *AuthService) Register(ctx context.Context, req dto.RegisterRequest) (db.User, error) {
+func (s *AuthService) Register(ctx context.Context, req dto.RegisterRequest) (string, error) {
     // Hash password
-    hashedPassword, err := utils.HashPassword(req.Password)
+    hashedPassword, err := utils.HashPassword(req.PasswordHash)
     if err != nil {
-        return db.User{}, errors.ErrInternalServer
+        return err.Error(), errors.ErrInternalServer
     }
 
     // Create user
-    user, err := s.repo.CreateUser(ctx, req.Username, req.Email, hashedPassword)
+    user, err := s.repo.CreateUser(ctx, req.Site, req.EmployeeID, hashedPassword, req.Role, req.Status, req.DepartmentID)
     if err != nil {
-        return db.User{}, err
+        return err.Error(), err
     }
 
     return user, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, req dto.LoginRequest) (string, db.User, error) {
-    user, err := s.repo.GetUserByEmail(ctx, req.Email)
+func (s *AuthService) Login(ctx context.Context, req dto.LoginRequest) (string, db.GetUserByUserNameRow, error) {
+    user, err := s.repo.GetUserByUserName(ctx, req.User)
     if err != nil {
-        return "", db.User{}, errors.ErrInvalidCredentials
+        return "", db.GetUserByUserNameRow{}, errors.ErrInvalidCredentials
     }
 
     if !utils.CheckPassword(req.Password, user.PasswordHash) {
-        return "", db.User{}, errors.ErrInvalidCredentials
+        return "", db.GetUserByUserNameRow{}, errors.ErrInvalidCredentials
     }
 
     token, err := utils.GenerateToken(int(user.ID), s.jwtSecret)
     if err != nil {
-        return "", db.User{}, errors.ErrInternalServer
+        return "", db.GetUserByUserNameRow{}, errors.ErrInternalServer
     }
 
     return token, user, nil
